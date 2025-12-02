@@ -1,0 +1,233 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String      @id @default(cuid())
+  email     String      @unique
+  password  String
+  name      String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  characters Character[]
+}
+
+model Character {
+  id           String      @id @default(cuid())
+  user         User?       @relation(fields: [userId], references: [id])
+  userId       String?
+  name         String
+  level        Int         @default(1)
+  xp           Int         @default(0)
+  job          Job         @relation(fields: [jobId], references: [id])
+  jobId        String
+  background   Background? @relation(fields: [backgroundId], references: [id])
+  backgroundId String?
+  // core stats
+  str          Int
+  agi          Int
+  vit          Int
+  intStat      Int
+  sense        Int
+  statPoints   Int         @default(0)
+
+  hpMax        Int         @default(10)
+  hpCurrent    Int         @default(10)
+  mpMax        Int         @default(10)
+  mpCurrent    Int         @default(10)
+
+  isSovereign  Boolean     @default(false)
+
+  monarchs     CharacterMonarch[]
+  sovereign    SovereignInstance?
+
+  abilities    CharacterAbility[]
+  feats        CharacterFeat[]
+  items        CharacterItem[]
+  runestones   CharacterRunestone[]
+
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Job {
+  id              String      @id @default(cuid())
+  name            String      @unique
+  primaryType     JobType
+  hitDie          Int         // 8, 10, 12
+  baseSpeed       Int         @default(30)
+  strBonus        Int         @default(0)
+  agiBonus        Int         @default(0)
+  vitBonus        Int         @default(0)
+  intBonus        Int         @default(0)
+  senseBonus      Int         @default(0)
+  pathLevel       Int         @default(2)
+
+  characters      Character[]
+}
+
+enum JobType {
+  MARTIAL
+  CASTER
+  HYBRID
+}
+
+model Background {
+  id            String      @id @default(cuid())
+  name          String      @unique
+  description   String
+  characters    Character[]
+}
+
+model Feat {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  description String
+  characters  CharacterFeat[]
+}
+
+model CharacterFeat {
+  id          String    @id @default(cuid())
+  character   Character @relation(fields: [characterId], references: [id])
+  characterId String
+  feat        Feat      @relation(fields: [featId], references: [id])
+  featId      String
+}
+
+model Ability {
+  id          String       @id @default(cuid())
+  name        String
+  tier        Int
+  type        AbilityType
+  kind        AbilityKind
+  keyStat     StatKey
+  description String
+
+  characterLinks CharacterAbility[]
+}
+
+enum AbilityType {
+  ACTION
+  BONUS
+  REACTION
+  PASSIVE
+}
+
+enum AbilityKind {
+  SPELL
+  MARTIAL
+  HYBRID
+}
+
+enum StatKey {
+  STR
+  AGI
+  VIT
+  INT
+  SENSE
+}
+
+model CharacterAbility {
+  id            String    @id @default(cuid())
+  character     Character @relation(fields: [characterId], references: [id])
+  characterId   String
+  ability       Ability   @relation(fields: [abilityId], references: [id])
+  abilityId     String
+  isNative      Boolean   @default(true)
+}
+
+model Item {
+  id          String         @id @default(cuid())
+  name        String
+  tier        ItemTier
+  type        ItemType
+  description String
+
+  characters CharacterItem[]
+}
+
+enum ItemTier {
+  COMMON
+  UNCOMMON
+  RARE
+  EPIC
+  LEGENDARY
+  RELIC
+  SOVEREIGN
+}
+
+enum ItemType {
+  WEAPON
+  ARMOR
+  SHIELD
+  ACCESSORY
+  RUNESTONE
+  CONSUMABLE
+  MATERIAL
+  RELIC
+}
+
+model CharacterItem {
+  id          String    @id @default(cuid())
+  character   Character @relation(fields: [characterId], references: [id])
+  characterId String
+  item        Item      @relation(fields: [itemId], references: [id])
+  itemId      String
+  quantity    Int       @default(1)
+}
+
+model Runestone {
+  id               String      @id @default(cuid())
+  name             String
+  tier             ItemTier
+  ability          Ability     @relation(fields: [abilityId], references: [id])
+  abilityId        String
+  description      String
+
+  characterLinks   CharacterRunestone[]
+}
+
+model CharacterRunestone {
+  id            String    @id @default(cuid())
+  character     Character @relation(fields: [characterId], references: [id])
+  characterId   String
+  runestone     Runestone @relation(fields: [runestoneId], references: [id])
+  runestoneId   String
+  slotIndex     Int
+}
+
+model MonarchAspect {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  description String
+
+  characterLinks CharacterMonarch[]
+}
+
+model CharacterMonarch {
+  id            String         @id @default(cuid())
+  character     Character      @relation(fields: [characterId], references: [id])
+  characterId   String
+  aspect        MonarchAspect  @relation(fields: [aspectId], references: [id])
+  aspectId      String
+  rank          Int            @default(1)
+}
+
+model SovereignInstance {
+  id              String         @id @default(cuid())
+  character       Character      @relation(fields: [characterId], references: [id])
+  characterId     String @unique
+  aspectA         MonarchAspect  @relation("AspectA", fields: [aspectAId], references: [id])
+  aspectAId       String
+  aspectB         MonarchAspect  @relation("AspectB", fields: [aspectBId], references: [id])
+  aspectBId       String
+  templateKey     String
+  name            String
+  createdAt       DateTime       @default(now())
+}
