@@ -1,0 +1,190 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String      @id @default(cuid())
+  email     String      @unique
+  name      String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  characters Character[]
+}
+
+model Job {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  primaryType JobPrimaryType
+  hitDie      Int
+  strBonus    Int @default(0)
+  agiBonus    Int @default(0)
+  vitBonus    Int @default(0)
+  intBonus    Int @default(0)
+  senseBonus  Int @default(0)
+  pathLevel   Int @default(1)
+  characters  Character[]
+}
+
+enum JobPrimaryType {
+  MARTIAL
+  CASTER
+  HYBRID
+}
+
+model Background {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  description String
+  characters  Character[]
+}
+
+model Ability {
+  id          String       @id @default(cuid())
+  name        String
+  description String
+  kind        AbilityKind
+  tier        Int
+  sourceTag   String?
+  characters  CharacterAbility[]
+  runestones  Runestone[]
+}
+
+enum AbilityKind {
+  SPELL
+  TECHNIQUE
+  PASSIVE
+}
+
+model Character {
+  id           String             @id @default(cuid())
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  name         String
+  level        Int                @default(1)
+  xp           Int                @default(0)
+  jobId        String
+  backgroundId String?
+
+  job        Job        @relation(fields: [jobId], references: [id])
+  background Background? @relation(fields: [backgroundId], references: [id])
+
+  str       Int
+  agi       Int
+  vit       Int
+  intStat   Int
+  sense     Int
+  hpMax     Int
+  hpCurrent Int
+  mpMax     Int
+  mpCurrent Int
+
+  statPoints Int @default(0)
+
+  isSovereign Boolean            @default(false)
+  sovereign   SovereignInstance?
+
+  abilities  CharacterAbility[]
+  items      CharacterItem[]
+  runestones CharacterRunestone[]
+  monarchs   CharacterMonarch[]
+}
+
+model CharacterAbility {
+  id               String   @id @default(cuid())
+  characterId      String
+  abilityId        String
+  isNative         Boolean  @default(true)
+  usesPerShortRest Int?    
+
+  character Character @relation(fields: [characterId], references: [id])
+  ability   Ability   @relation(fields: [abilityId], references: [id])
+}
+
+model Item {
+  id          String          @id @default(cuid())
+  name        String
+  description String
+  type        ItemType
+  tier        ItemTier
+  characters  CharacterItem[]
+}
+
+enum ItemType {
+  WEAPON
+  ARMOR
+  ACCESSORY
+  CONSUMABLE
+  MATERIAL
+  KEY
+}
+
+enum ItemTier {
+  COMMON
+  UNCOMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+model CharacterItem {
+  id          String    @id @default(cuid())
+  characterId String
+  itemId      String
+  quantity    Int       @default(1)
+
+  character Character @relation(fields: [characterId], references: [id])
+  item      Item      @relation(fields: [itemId], references: [id])
+}
+
+model Runestone {
+  id          String     @id @default(cuid())
+  name        String
+  description String
+  tier        ItemTier
+  abilityId   String
+
+  ability    Ability            @relation(fields: [abilityId], references: [id])
+  characters CharacterRunestone[]
+}
+
+model CharacterRunestone {
+  id          String   @id @default(cuid())
+  characterId String
+  runestoneId String
+  socketSlot  Int      @default(0)
+
+  character Character @relation(fields: [characterId], references: [id])
+  runestone Runestone @relation(fields: [runestoneId], references: [id])
+}
+
+model MonarchAspect {
+  id          String            @id @default(cuid())
+  name        String            @unique
+  description String
+  characters  CharacterMonarch[]
+}
+
+model CharacterMonarch {
+  id          String        @id @default(cuid())
+  characterId String
+  aspectId    String
+  rank        Int           @default(1)
+
+  character Character     @relation(fields: [characterId], references: [id])
+  aspect    MonarchAspect @relation(fields: [aspectId], references: [id])
+}
+
+model SovereignInstance {
+  id            String   @id @default(cuid())
+  characterId   String   @unique
+  name          String
+  level         Int      @default(1)
+  authorityRank Int      @default(1)
+
+  character Character @relation(fields: [characterId], references: [id])
+}
